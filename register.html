@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Trading Simulation</title>
+    <style>
+        /* Your existing styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #181818;
+            color: #dcdcdc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            display: none;
+            width: 100%;
+            max-width: 1200px;
+            background-color: #1c1c1c;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar h2 {
+            text-align: center;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar ul li {
+            padding: 15px;
+            border-bottom: 1px solid #34495e;
+            cursor: pointer;
+        }
+
+        .sidebar ul li:hover {
+            background: #34495e;
+        }
+
+        .header {
+            padding: 20px;
+            background: #3498db;
+            color: #ecf0f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .main {
+            margin-left: 250px;
+            padding: 20px;
+            height: 100vh;
+            overflow-y: auto;
+            background-color: #1c1c1c;
+        }
+
+        /* New Graph Section */
+        #graphSection {
+            display: none;
+            background: #2c3e50;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 400px;
+        }
+    </style>
+
+    <!-- Add Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <!-- Login Section -->
+    <div class="login-container" id="loginSection">
+        <h2>Login</h2>
+        <form id="loginForm">
+            <input type="text" id="username" placeholder="Username" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <!-- Main Trading Application -->
+    <div class="container" id="tradingApp">
+        <div class="sidebar">
+            <h2>Trading Menu</h2>
+            <ul>
+                <li id="dashboard">Dashboard</li>
+                <li id="stocks">Stocks</li>
+                <li id="portfolio">Portfolio</li>
+                <li id="trade">Trade</li>
+                <li id="graph">Graph</li> <!-- Graph Option Added -->
+                <li id="settings">Settings</li>
+                <li id="logout">Logout</li> <!-- Logout Option Added -->
+            </ul>
+        </div>
+
+        <div class="main">
+            <!-- Header -->
+            <div class="header">
+                <h1>Stock Trading Simulator</h1>
+                <span>Welcome, <span id="userNameDisplay"></span></span>
+            </div>
+
+            <!-- Graph Section -->
+            <div id="graphSection">
+                <h2>Stock Price Graph</h2>
+                <canvas id="stockChart"></canvas> <!-- Canvas for Graph -->
+            </div>
+
+            <!-- Stock Market Table -->
+            <div class="stocks">
+                <h2>Stock Market</h2>
+                <table id="stockTable">
+                    <tr>
+                        <th>Stock</th>
+                        <th>Price</th>
+                        <th>Change</th>
+                    </tr>
+                    <tr>
+                        <td>Apple (AAPL)</td>
+                        <td class="price" data-stock="AAPL">$150.00</td>
+                        <td class="change" style="color:green;">+2.5%</td>
+                    </tr>
+                    <tr>
+                        <td>Amazon (AMZN)</td>
+                        <td class="price" data-stock="AMZN">$3300.00</td>
+                        <td class="change" style="color:red;">-1.2%</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Portfolio -->
+            <div class="portfolio">
+                <h2>Your Portfolio</h2>
+                <table id="portfolioTable">
+                    <tr>
+                        <th>Stock</th>
+                        <th>Shares</th>
+                        <th>Value</th>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Trading Form -->
+            <div class="trade">
+                <h2>Trade Stocks</h2>
+                <form id="tradeForm">
+                    <label for="stock">Stock:</label>
+                    <select id="stock">
+                        <option value="AAPL">Apple (AAPL)</option>
+                        <option value="AMZN">Amazon (AMZN)</option>
+                    </select>
+                    
+                    <label for="action">Action:</label>
+                    <select id="action">
+                        <option value="buy">Buy</option>
+                        <option value="sell">Sell</option>
+                    </select>
+                    
+                    <label for="quantity">Quantity:</label>
+                    <input type="number" id="quantity" min="1" value="1">
+                    
+                    <button type="submit">Execute Trade</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Show trading app after login
+        document.getElementById("loginForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            let username = document.getElementById("username").value;
+            let password = document.getElementById("password").value;
+
+            if (username && password) {
+                document.getElementById("loginSection").style.display = "none"; // Hide login form
+                document.getElementById("tradingApp").style.display = "block"; // Show trading app
+                document.getElementById("userNameDisplay").textContent = username; // Display username
+            } else {
+                alert("Please enter both username and password.");
+            }
+        });
+
+        // Trade stocks functionality
+        let tradeHistory = []; // Store trade history for graph
+        document.getElementById("tradeForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            let stock = document.getElementById("stock").value;
+            let action = document.getElementById("action").value;
+            let quantity = parseInt(document.getElementById("quantity").value);
+            let stockPrice = getStockPrice(stock);
+
+            if (!stockPrice) {
+                alert("Invalid stock selection");
+                return;
+            }
+
+            let portfolioTable = document.getElementById("portfolioTable");
+            let existingRow = document.querySelector(`#portfolioTable tr[data-stock='${stock}']`);
+
+            // Handle Buy/Sell
+            if (action === "buy") {
+                if (existingRow) {
+                    let sharesCell = existingRow.cells[1];
+                    let valueCell = existingRow.cells[2];
+                    let newShares = parseInt(sharesCell.textContent) + quantity;
+                    sharesCell.textContent = newShares;
+                    valueCell.textContent = `$${(newShares * stockPrice).toFixed(2)}`;
+                } else {
+                    let newRow = portfolioTable.insertRow();
+                    newRow.setAttribute("data-stock", stock);
+                    newRow.innerHTML = `<td>${stock}</td><td>${quantity}</td><td>$${(quantity * stockPrice).toFixed(2)}</td>`;
+                }
+
+                // Record trade for graph
+                tradeHistory.push({ stock, action, quantity, price: stockPrice, date: new Date() });
+            } else if (action === "sell") {
+                if (existingRow) {
+                    let sharesCell = existingRow.cells[1];
+                    let valueCell = existingRow.cells[2];
+                    let currentShares = parseInt(sharesCell.textContent);
+
+                    if (currentShares >= quantity) {
+                        let newShares = currentShares - quantity;
+                        if (newShares > 0) {
+                            sharesCell.textContent = newShares;
+                            valueCell.textContent = `$${(newShares * stockPrice).toFixed(2)}`;
+                        } else {
+                            existingRow.remove();
+                        }
+                    } else {
+                        alert("Not enough shares to sell.");
+                    }
+                } else {
+                    alert("You don't own this stock.");
+                }
+
+                // Record trade for graph
+                tradeHistory.push({ stock, action, quantity, price: stockPrice, date: new Date() });
+            }
+        });
+
+        // Display graph when "Graph" option is clicked
+        document.getElementById("graph").addEventListener("click", function() {
+            document.getElementById("graphSection").style.display = "block";
+            displayGraph();
+        });
+
+        function getStockPrice(stock) {
+            let prices = { AAPL: 150, AMZN: 3300 };
+            return prices[stock] || null;
+        }
+
+        function displayGraph() {
+            let ctx = document.getElementById("stockChart").getContext('2d');
+
+            let labels = tradeHistory.map(trade => trade.date.toLocaleTimeString());
+            let data = tradeHistory.map(trade => trade.price);
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Stock Price History',
+                        data: data,
+                        borderColor: '#3498db',
+                        fill: false,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            type: 'category',
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Price'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>

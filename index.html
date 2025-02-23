@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Trading - Login</title>
+
+<!-- Corrected CSS and JS paths -->
+<link rel="stylesheet" href="css/styles.css">  ✅
+</head>
+<body>
+    <div class="login-container">
+        <h2>Stock Trading Login</h2>
+        <form id="login-form">
+            <input type="text" id="username" placeholder="Username" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+        <p>New user? <a href="/register.html">Register here</a></p>
+    </div>
+
+    <!-- Load JavaScript (Check the Path) -->
+    <script src="js/api.js"></script> 
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await login(username, password); 
+                if (response.success) {
+                    localStorage.setItem("token", response.token);
+                    window.location.href = "/dashboard.html";
+                } else {
+                    alert("Invalid credentials");
+                }
+            } catch (error) {
+                console.error("Login Error:", error);
+                alert("Something went wrong. Try again!");
+            }
+        });
+    </script>
+</body>
+</html>
